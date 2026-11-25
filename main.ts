@@ -45,23 +45,38 @@
 //
 // So the entry is exactly "Crumb tray full. I am 40% crumbs now.":
 // 37 characters, one line, no trailing newline, nothing else.
+//
+// Revision 2 (kit check: thinking_revised): the whitespace-only
+// guard below was folded into the combined gate check in revision 1,
+// so it never ran as a check of its own. It is now a standalone
+// guard, first, with its own error — an entry of only spaces, tabs
+// or newlines is refused before length is even looked at. The entry
+// string itself is untouched by this revision.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const ENTRY = "Crumb tray full. I am 40% crumbs now.";
 const OUT_PATH = "/output/entry.txt";
 
+// Standalone whitespace-only guard: the gate counts a file of only
+// white space as invalid, so refuse it here with a message that says
+// exactly that, instead of hiding it inside the length check.
+if (ENTRY.trim().length === 0) {
+  throw new Error(
+    `refusing to write a whitespace-only entry: ${JSON.stringify(ENTRY)}`,
+  );
+}
+
 // Gate check, before anything is written: one line, 1-120
-// characters, not only white space. Checked in bytes as well as in
-// characters: the gate counts characters, but the exact-tie break
-// counts bytes, so the entry must be minimal on both measures —
-// "Crumb tray full. I am 40% crumbs now." is 37 of each, with no
-// trailing newline to inflate it.
+// characters. Checked in bytes as well as in characters: the gate
+// counts characters, but the exact-tie break counts bytes, so the
+// entry must be minimal on both measures — "Crumb tray full. I am
+// 40% crumbs now." is 37 of each, with no trailing newline to
+// inflate it.
 if (
   ENTRY.length < 1 ||
   ENTRY.length > 120 ||
   Buffer.byteLength(ENTRY, "utf8") > 120 ||
-  ENTRY.trim().length === 0 ||
   ENTRY.includes("\n")
 ) {
   throw new Error(`refusing to write an invalid entry: ${JSON.stringify(ENTRY)}`);
